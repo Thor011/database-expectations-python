@@ -1,0 +1,23 @@
+# Core dependencies
+great-expectations>=0.18.0
+sqlalchemy>=2.0.0
+pandas>=2.0.0
+psycopg2-binary>=2.9.0  # PostgreSQL
+pymysql>=1.1.0          # MySQL
+pyodbc>=5.0.0           # SQL Server
+cx_Oracle>=8.3.0        # Oracle
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# Utilities
+python-dotenv>=1.0.0
+pyyaml>=6.0.0
+click>=8.1.0
+
+# Scheduling (optional)
+apscheduler>=3.10.0
+
+# Data formats
+openpyxl>=3.1.0
