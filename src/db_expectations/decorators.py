@@ -59,7 +59,7 @@ def validate_before(
                 else:
                     raise ValueError("Either table_name or query must be provided")
                 
-                success = results.success
+                success = results["success"]
                 
                 if not success and raise_on_failure:
                     raise AssertionError(f"Pre-validation failed for {func.__name__}")
@@ -131,7 +131,7 @@ def validate_after(
                 else:
                     raise ValueError("Either table_name or query must be provided")
                 
-                success = validation_results.success
+                success = validation_results["success"]
                 
                 if not success and raise_on_failure:
                     raise AssertionError(f"Post-validation failed for {func.__name__}")
@@ -211,7 +211,7 @@ def validate_both(
                             expectations=expectations_before
                         )
                     
-                    if not results_before.success and raise_on_failure:
+                    if not results_before["success"] and raise_on_failure:
                         raise AssertionError(f"Pre-validation failed for {func.__name__}")
                 
             except Exception as e:
@@ -245,7 +245,7 @@ def validate_both(
                             expectations=expectations_after
                         )
                     
-                    if not results_after.success and raise_on_failure:
+                    if not results_after["success"] and raise_on_failure:
                         raise AssertionError(f"Post-validation failed for {func.__name__}")
                 
             except Exception as e:

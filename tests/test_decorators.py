@@ -52,9 +52,8 @@ class TestValidateBeforeDecorator:
     def test_validate_before_failure_raises(self, mock_validator):
         """Test pre-validation failure raises error."""
         
-        # Mock failed validation
-        validation_result = MagicMock()
-        validation_result.success = False
+        # Mock failed validation - return dict instead of object
+        validation_result = {"success": False}
         mock_validator.validate_table.return_value = validation_result
         
         @validate_before(mock_validator, table_name="users", raise_on_failure=True)
@@ -67,9 +66,8 @@ class TestValidateBeforeDecorator:
     def test_validate_before_failure_no_raise(self, mock_validator):
         """Test pre-validation failure doesn't raise when configured."""
         
-        # Mock failed validation
-        validation_result = MagicMock()
-        validation_result.success = False
+        # Mock failed validation - return dict instead of object
+        validation_result = {"success": False}
         mock_validator.validate_table.return_value = validation_result
         
         @validate_before(mock_validator, table_name="users", raise_on_failure=False)
@@ -110,9 +108,8 @@ class TestValidateAfterDecorator:
     def test_validate_after_failure_raises(self, mock_validator):
         """Test post-validation failure raises error."""
         
-        # Mock failed validation
-        validation_result = MagicMock()
-        validation_result.success = False
+        # Mock failed validation - return dict instead of object
+        validation_result = {"success": False}
         mock_validator.validate_table.return_value = validation_result
         
         @validate_after(mock_validator, table_name="users", raise_on_failure=True)
@@ -156,11 +153,9 @@ class TestValidateBothDecorator:
     def test_validate_both_pre_failure(self, mock_validator):
         """Test pre-validation failure in validate_both."""
         
-        # First call fails (pre), second succeeds (post)
-        validation_fail = MagicMock()
-        validation_fail.success = False
-        validation_success = MagicMock()
-        validation_success.success = True
+        # First call fails (pre), second succeeds (post) - return dicts instead of objects
+        validation_fail = {"success": False}
+        validation_success = {"success": True}
         
         mock_validator.validate_table.side_effect = [validation_fail, validation_success]
         

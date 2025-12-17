@@ -12,7 +12,12 @@ from db_expectations.suites import ExpectationSuites
 @pytest.fixture
 def test_db():
     """Create a temporary test database."""
-    db_path = "test_temp.db"
+    import tempfile
+    import uuid
+    
+    # Create unique temp file
+    temp_dir = tempfile.gettempdir()
+    db_path = os.path.join(temp_dir, f"test_db_{uuid.uuid4().hex}.db")
     
     # Create database
     conn = sqlite3.connect(db_path)
@@ -42,11 +47,23 @@ def test_db():
     yield db_path
     
     # Cleanup
-    if os.path.exists(db_path):
-        os.remove(db_path)
+    import time
+    for attempt in range(5):
+        try:
+            if os.path.exists(db_path):
+                os.remove(db_path)
+            break
+        except PermissionError:
+            time.sleep(0.1)
+            continue
+    
+    # Clean up gx directory
     if os.path.exists("gx"):
-        import shutil
-        shutil.rmtree("gx")
+        try:
+            import shutil
+            shutil.rmtree("gx")
+        except:
+            pass
 
 
 @pytest.fixture
@@ -55,7 +72,11 @@ def validator(test_db):
     connection_string = f"sqlite:///{test_db}"
     v = DatabaseValidator(connection_string)
     yield v
-    v.close()
+    # Close validator and dispose engine
+    if hasattr(v, 'engine') and v.engine:
+        v.engine.dispose()
+    if hasattr(v, 'close'):
+        v.close()
 
 
 class TestDatabaseValidator:
@@ -107,7 +128,7 @@ class TestDatabaseValidator:
             expectations=expectations
         )
         
-        assert results.success is True
+        assert results["success"] is True
     
     def test_validate_query_success(self, validator):
         """Test successful query validation."""
@@ -125,7 +146,7 @@ class TestDatabaseValidator:
             expectations=expectations
         )
         
-        assert results.success is True
+        assert results["success"] is True
     
     def test_context_manager(self, test_db):
         """Test validator works as context manager."""

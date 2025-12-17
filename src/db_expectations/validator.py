@@ -57,7 +57,10 @@ class DatabaseValidator:
 
     def _setup_datasource(self):
         """Set up SQL datasource for Great Expectations."""
-        datasource_name = "database_datasource"
+        import hashlib
+        # Create unique datasource name based on connection string
+        conn_hash = hashlib.md5(self.connection_string.encode()).hexdigest()[:8]
+        datasource_name = f"database_datasource_{conn_hash}"
 
         try:
             # Try to get existing datasource
@@ -126,8 +129,11 @@ class DatabaseValidator:
                     # Execute callable expectation
                     exp(batch)
                 else:
-                    # Add dict-based expectation (legacy format)
-                    batch.expectation_suite.add_expectation(**exp)
+                    # Add dict-based expectation
+                    expectation_type = exp.get("expectation_type")
+                    kwargs = exp.get("kwargs", {})
+                    if expectation_type and hasattr(batch, expectation_type):
+                        getattr(batch, expectation_type)(**kwargs)
 
         # Run validation
         results = batch.validate()
@@ -188,8 +194,11 @@ class DatabaseValidator:
                     # Execute callable expectation
                     exp(batch)
                 else:
-                    # Add dict-based expectation (legacy format)
-                    batch.expectation_suite.add_expectation(**exp)
+                    # Add dict-based expectation
+                    expectation_type = exp.get("expectation_type")
+                    kwargs = exp.get("kwargs", {})
+                    if expectation_type and hasattr(batch, expectation_type):
+                        getattr(batch, expectation_type)(**kwargs)
 
         # Run validation
         results = batch.validate()
