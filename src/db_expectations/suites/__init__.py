@@ -2,7 +2,7 @@
 Pre-built expectation suites for common database validation scenarios
 """
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 
 class ExpectationSuites:
@@ -110,14 +110,12 @@ class ExpectationSuites:
 
     @staticmethod
     def row_count_check(
-        min_rows: int = 0, max_rows: int = None
+        min_rows: int = 0, max_rows: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """Validate table row count."""
         kwargs = {"min_value": min_rows}
         if max_rows is not None:
             kwargs["max_value"] = max_rows
-        else:
-            kwargs["max_value"] = None
 
         return [
             {

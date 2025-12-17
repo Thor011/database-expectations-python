@@ -5,6 +5,7 @@ DatabaseValidator - Core validation engine for database testing
 from typing import Optional, Dict, Any, List, Callable, Union
 from sqlalchemy import create_engine, inspect
 import great_expectations as gx
+from great_expectations.data_context import FileDataContext, EphemeralDataContext
 import pandas as pd
 from pathlib import Path
 
@@ -20,6 +21,8 @@ class DatabaseValidator:
     - Automatic checkpoint creation
     - Detailed validation reports
     """
+
+    context: Union[FileDataContext, EphemeralDataContext]
 
     def __init__(
         self,
