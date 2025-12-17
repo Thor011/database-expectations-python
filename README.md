@@ -23,28 +23,32 @@ cd database-expectations-python
 
 # Install dependencies
 pip install -r requirements.txt
-
-# Initialize Great Expectations
-great_expectations init
 ```
+
+No need to initialize Great Expectations separately - the library handles it automatically!
 
 ### Basic Usage
 
 ```python
 from db_expectations import DatabaseValidator
+from db_expectations.suites import ExpectationSuites
 
 # Connect to your database
 validator = DatabaseValidator(
     connection_string="postgresql://user:password@localhost:5432/mydb"
 )
 
-# Run built-in validation suite
+# Use pre-built expectation suites
+expectations = ExpectationSuites.null_checks(["user_id", "email", "created_at"])
+expectations += ExpectationSuites.unique_checks(["user_id", "email"])
+
+# Run validation
 results = validator.validate_table(
     table_name="users",
-    suite_name="basic_data_quality"
+    expectations=expectations
 )
 
-print(f"Validation passed: {results.success}")
+print(f"Validation passed: {results['success']}")
 ```
 
 ## 📁 Project Structure
@@ -54,24 +58,25 @@ database-expectations-python/
 ├── src/
 │   ├── db_expectations/
 │   │   ├── __init__.py
-│   │   ├── validators/          # Database validators
-│   │   ├── suites/              # Pre-built expectation suites
-│   │   ├── connectors/          # Database connectors
-│   │   └── decorators/          # Validation decorators
+│   │   ├── validator.py         # Core database validator
+│   │   ├── decorators.py        # Validation decorators
+│   │   └── suites/
+│   │       └── __init__.py      # Pre-built ExpectationSuites
 ├── examples/
-│   ├── postgres_example.py
-│   ├── mysql_example.py
-│   ├── sqlserver_example.py
-│   └── sqlite_example.py
+│   ├── basic_sqlite_example.py
+│   ├── postgresql_decorators_example.py
+│   ├── etl_pipeline_example.py
+│   ├── chinook_database_example.py      # Music store database
+│   ├── northwind_database_example.py    # Business operations
+│   ├── world_database_example.py        # Geographic data
+│   ├── banking_database_example.py      # Financial transactions
+│   └── etl_validation_example.py        # ETL with decorators
 ├── tests/
-│   └── test_validators.py
-├── great_expectations/          # GX configuration
+│   ├── test_validator.py
+│   └── test_decorators.py
 ├── docs/
-│   ├── getting_started.md
-│   └── best_practices.md
-├── .github/
-│   └── workflows/
-│       └── data_quality.yml
+│   ├── API_REFERENCE.md
+│   └── QUICK_START.md
 ├── requirements.txt
 ├── setup.py
 └── README.md
@@ -82,29 +87,76 @@ database-expectations-python/
 ### Pre-built Expectation Suites
 
 ```python
-# User table validation
-validator.expect_column_values_to_not_be_null("user_id")
-validator.expect_column_values_to_be_unique("email")
-validator.expect_column_values_to_match_regex("email", r"^[\w\.-]+@[\w\.-]+\.\w+$")
+from db_expectations.suites import ExpectationSuites
 
-# Product table validation
-validator.expect_column_values_to_be_between("price", min_value=0, max_value=999999)
-validator.expect_column_values_to_be_in_set("status", ["active", "inactive", "archived"])
+# Null checks for critical columns
+null_checks = ExpectationSuites.null_checks(["user_id", "email", "name"])
 
-# Order table validation
-validator.expect_column_pair_values_A_to_be_greater_than_B("order_date", "created_date")
+# Type validation
+type_checks = ExpectationSuites.type_checks({
+    "user_id": "INTEGER",
+    "email": "VARCHAR",
+    "age": "INTEGER"
+})
+
+# Range validation
+range_checks = ExpectationSuites.range_checks({
+    "age": {"min_value": 0, "max_value": 120},
+    "price": {"min_value": 0, "max_value": 999999}
+})
+
+# Unique constraints
+unique_checks = ExpectationSuites.unique_checks(["user_id", "email"])
+
+# Format validation (regex)
+format_checks = ExpectationSuites.format_checks({
+    "email": r"^[\w\.-]+@[\w\.-]+\.\w+$",
+    "phone": r"^\d{3}-\d{3}-\d{4}$"
+})
+
+# Set membership
+set_checks = ExpectationSuites.set_membership_checks({
+    "status": ["active", "inactive", "archived"],
+    "role": ["admin", "user", "guest"]
+})
+
+# Combine multiple suites
+all_checks = ExpectationSuites.combine([
+    null_checks, 
+    type_checks, 
+    unique_checks
+])
 ```
 
 ### Validation Decorators
 
 ```python
-from db_expectations.decorators import validate_before, validate_after
+from db_expectations.decorators import validate_before, validate_after, validate_both
 
-@validate_before(table="users", suite="user_integrity")
-@validate_after(table="users", suite="user_integrity")
+# Validate before function execution
+@validate_before(
+    table="users",
+    expectations=ExpectationSuites.null_checks(["user_id", "email"])
+)
 def create_user(name, email):
-    # Your database insert logic
     db.execute("INSERT INTO users (name, email) VALUES (?, ?)", (name, email))
+
+# Validate after function execution
+@validate_after(
+    table="users",
+    expectations=ExpectationSuites.unique_checks(["email"])
+)
+def update_user_email(user_id, new_email):
+    db.execute("UPDATE users SET email = ? WHERE user_id = ?", (new_email, user_id))
+
+# Validate both before and after
+@validate_both(
+    table="orders",
+    expectations=ExpectationSuites.range_checks({"total_amount": {"min_value": 0}})
+)
+def process_order(order_id):
+    # Your order processing logic
+    pass
 ```
 
 ### Supported Databases
@@ -117,46 +169,57 @@ def create_user(name, email):
 - ✅ Snowflake
 - ✅ BigQuery
 
-## 📊 Example Validation Suite
+## 📊 Real-World Examples
 
+Check out the `examples/` directory for comprehensive examples:
+
+### Chinook Music Store Database
 ```python
-import great_expectations as gx
+# examples/chinook_database_example.py
+# Validates 15,707 rows across 11 tables
+# - Album validation (347 albums)
+# - Customer validation (59 customers)
+# - Invoice validation (412 invoices)
+# - Track validation (3,503 tracks)
+# - Sales analysis
+```
 
-# Create expectation suite
-suite = gx.core.ExpectationSuite(expectation_suite_name="user_table_quality")
+### Northwind Business Operations
+```python
+# examples/northwind_database_example.py
+# Validates 625,000+ rows across 14 tables
+# - Product inventory validation
+# - Customer and order management
+# - Employee records
+# - Sales performance analysis
+```
 
-# Column existence
-suite.add_expectation({
-    "expectation_type": "expect_column_to_exist",
-    "kwargs": {"column": "user_id"}
-})
+### World Geographic Data
+```python
+# examples/world_database_example.py
+# Validates countries, cities, and languages
+# - Continental statistics
+# - Urbanization analysis
+# - Language distribution
+```
 
-# Not null constraints
-suite.add_expectation({
-    "expectation_type": "expect_column_values_to_not_be_null",
-    "kwargs": {"column": "user_id"}
-})
+### Banking & Fraud Detection
+```python
+# examples/banking_database_example.py
+# Validates financial transactions
+# - Customer KYC validation
+# - Account balance checks
+# - Transaction monitoring
+# - High-risk detection
+```
 
-# Data types
-suite.add_expectation({
-    "expectation_type": "expect_column_values_to_be_of_type",
-    "kwargs": {"column": "user_id", "type_": "INTEGER"}
-})
-
-# Email format
-suite.add_expectation({
-    "expectation_type": "expect_column_values_to_match_regex",
-    "kwargs": {
-        "column": "email",
-        "regex": r"^[\w\.-]+@[\w\.-]+\.\w+$"
-    }
-})
-
-# Age range
-suite.add_expectation({
-    "expectation_type": "expect_column_values_to_be_between",
-    "kwargs": {"column": "age", "min_value": 0, "max_value": 120}
-})
+### ETL Pipeline Validation
+```python
+# examples/etl_validation_example.py
+# Multi-step data pipeline with decorators
+# - Raw data validation
+# - Data cleaning with @validate_before/@validate_after
+# - Aggregation with @validate_both
 ```
 
 ## 🔄 CI/CD Integration
@@ -193,14 +256,25 @@ jobs:
 
 ### 1. Pre-deployment Validation
 ```python
+from db_expectations import DatabaseValidator
+from db_expectations.suites import ExpectationSuites
+
 # Validate data before deploying schema changes
-validator.validate_database(suite="pre_migration_checks")
+validator = DatabaseValidator("postgresql://localhost/prod")
+expectations = ExpectationSuites.null_checks(["id", "created_at"])
+results = validator.validate_table("users", expectations)
 ```
 
 ### 2. ETL Pipeline Quality
 ```python
+from db_expectations.decorators import validate_after
+from db_expectations.suites import ExpectationSuites
+
 # Validate data after ETL process
-@validate_after(table="staging_users", suite="etl_quality")
+@validate_after(
+    table="staging_users",
+    expectations=ExpectationSuites.completeness_check(columns=["email", "phone"])
+)
 def run_etl_pipeline():
     # ETL logic here
     pass
@@ -208,32 +282,37 @@ def run_etl_pipeline():
 
 ### 3. Production Monitoring
 ```python
+from db_expectations import DatabaseValidator
+from db_expectations.suites import ExpectationSuites
+
 # Schedule daily data quality checks
-from apscheduler.schedulers.blocking import BlockingScheduler
+validator = DatabaseValidator("postgresql://localhost/prod")
 
-scheduler = BlockingScheduler()
-
-@scheduler.scheduled_job('cron', hour=2)
 def daily_validation():
-    validator.validate_all_tables()
-    
-scheduler.start()
+    tables = ["users", "orders", "products"]
+    for table in tables:
+        expectations = ExpectationSuites.data_freshness_check(
+            "updated_at", 
+            max_age_days=1
+        )
+        results = validator.validate_table(table, expectations)
+        if not results["success"]:
+            send_alert(f"Data quality issue in {table}")
 ```
 
 ## 📖 Documentation
 
-- [Getting Started Guide](docs/getting_started.md)
-- [Best Practices](docs/best_practices.md)
-- [API Reference](docs/api_reference.md)
-- [Examples](examples/)
+- [Quick Start Guide](docs/QUICK_START.md)
+- [API Reference](docs/API_REFERENCE.md)
+- [Real-World Examples](examples/)
 
 ## 🛠️ Technology Stack
 
-- **Great Expectations** 0.18+
+- **Great Expectations** 1.1.0+
 - **SQLAlchemy** 2.0+
-- **Pandas** 2.0+
-- **Pytest** 7.4+
-- **Python** 3.9+
+- **Pandas** 2.2+
+- **Pytest** 8.3+
+- **Python** 3.8+
 
 ## 🤝 Contributing
 
