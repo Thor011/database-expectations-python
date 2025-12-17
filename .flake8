@@ -1,0 +1,17 @@
+[flake8]
+max-line-length = 120
+max-complexity = 15
+exclude =
+    .git,
+    __pycache__,
+    .pytest_cache,
+    .venv,
+    venv,
+    env,
+    gx,
+    *.egg-info
+
+# Ignore specific warnings if needed
+ignore =
+    # W503: line break before binary operator (conflicts with PEP 8)
+    W503,
