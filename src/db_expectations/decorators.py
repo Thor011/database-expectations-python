@@ -15,7 +15,7 @@ def validate_before(
     query: Optional[str] = None,
     suite_name: Optional[str] = None,
     expectations: Optional[List[Dict[str, Any]]] = None,
-    raise_on_failure: bool = True
+    raise_on_failure: bool = True,
 ):
     """
     Decorator to validate database state BEFORE function execution.
@@ -36,6 +36,7 @@ def validate_before(
             # Insert logic
             pass
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -46,7 +47,7 @@ def validate_before(
                     results = validator.validate_table(
                         table_name=table_name,
                         suite_name=suite_name,
-                        expectations=expectations
+                        expectations=expectations,
                     )
                 elif query:
                     asset_name = f"{func.__name__}_pre"
@@ -54,20 +55,17 @@ def validate_before(
                         query=query,
                         asset_name=asset_name,
                         suite_name=suite_name,
-                        expectations=expectations
+                        expectations=expectations,
                     )
                 else:
-                    raise ValueError(
-                        "Either table_name or query must be provided")
+                    raise ValueError("Either table_name or query must be provided")
 
                 success = results["success"]
 
                 if not success and raise_on_failure:
-                    raise AssertionError(
-                        f"Pre-validation failed for {func.__name__}")
+                    raise AssertionError(f"Pre-validation failed for {func.__name__}")
 
-                logger.info(
-                    f"Pre-validation {'passed' if success else 'failed'}")
+                logger.info(f"Pre-validation {'passed' if success else 'failed'}")
 
             except Exception as e:
                 logger.error(f"Pre-validation error: {e}")
@@ -78,6 +76,7 @@ def validate_before(
             return func(*args, **kwargs)
 
         return wrapper
+
     return decorator
 
 
@@ -87,7 +86,7 @@ def validate_after(
     query: Optional[str] = None,
     suite_name: Optional[str] = None,
     expectations: Optional[List[Dict[str, Any]]] = None,
-    raise_on_failure: bool = True
+    raise_on_failure: bool = True,
 ):
     """
     Decorator to validate database state AFTER function execution.
@@ -108,6 +107,7 @@ def validate_after(
             # Insert logic
             pass
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -121,7 +121,7 @@ def validate_after(
                     validation_results = validator.validate_table(
                         table_name=table_name,
                         suite_name=suite_name,
-                        expectations=expectations
+                        expectations=expectations,
                     )
                 elif query:
                     asset_name = f"{func.__name__}_post"
@@ -129,20 +129,17 @@ def validate_after(
                         query=query,
                         asset_name=asset_name,
                         suite_name=suite_name,
-                        expectations=expectations
+                        expectations=expectations,
                     )
                 else:
-                    raise ValueError(
-                        "Either table_name or query must be provided")
+                    raise ValueError("Either table_name or query must be provided")
 
                 success = validation_results["success"]
 
                 if not success and raise_on_failure:
-                    raise AssertionError(
-                        f"Post-validation failed for {func.__name__}")
+                    raise AssertionError(f"Post-validation failed for {func.__name__}")
 
-                logger.info(
-                    f"Post-validation {'passed' if success else 'failed'}")
+                logger.info(f"Post-validation {'passed' if success else 'failed'}")
 
             except Exception as e:
                 logger.error(f"Post-validation error: {e}")
@@ -152,6 +149,7 @@ def validate_after(
             return result
 
         return wrapper
+
     return decorator
 
 
@@ -164,7 +162,7 @@ def validate_both(
     suite_name_after: Optional[str] = None,
     expectations_before: Optional[List[Dict[str, Any]]] = None,
     expectations_after: Optional[List[Dict[str, Any]]] = None,
-    raise_on_failure: bool = True
+    raise_on_failure: bool = True,
 ):
     """
     Decorator to validate database state BEFORE and AFTER function execution.
@@ -194,6 +192,7 @@ def validate_both(
             # Processing logic
             pass
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -209,7 +208,7 @@ def validate_both(
                         results_before = validator.validate_table(
                             table_name=t,
                             suite_name=suite_name_before,
-                            expectations=expectations_before
+                            expectations=expectations_before,
                         )
                     else:
                         asset_name = f"{func.__name__}_pre"
@@ -217,12 +216,13 @@ def validate_both(
                             query=q,
                             asset_name=asset_name,
                             suite_name=suite_name_before,
-                            expectations=expectations_before
+                            expectations=expectations_before,
                         )
 
                     if not results_before["success"] and raise_on_failure:
                         raise AssertionError(
-                            f"Pre-validation failed for {func.__name__}")
+                            f"Pre-validation failed for {func.__name__}"
+                        )
 
             except Exception as e:
                 logger.error(f"Pre-validation error: {e}")
@@ -244,7 +244,7 @@ def validate_both(
                         results_after = validator.validate_table(
                             table_name=t,
                             suite_name=suite_name_after,
-                            expectations=expectations_after
+                            expectations=expectations_after,
                         )
                     else:
                         asset_name = f"{func.__name__}_post"
@@ -252,12 +252,13 @@ def validate_both(
                             query=q,
                             asset_name=asset_name,
                             suite_name=suite_name_after,
-                            expectations=expectations_after
+                            expectations=expectations_after,
                         )
 
                     if not results_after["success"] and raise_on_failure:
                         raise AssertionError(
-                            f"Post-validation failed for {func.__name__}")
+                            f"Post-validation failed for {func.__name__}"
+                        )
 
             except Exception as e:
                 logger.error(f"Post-validation error: {e}")
@@ -267,4 +268,5 @@ def validate_both(
             return result
 
         return wrapper
+
     return decorator

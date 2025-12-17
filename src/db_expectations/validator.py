@@ -25,7 +25,7 @@ class DatabaseValidator:
         self,
         connection_string: str,
         context_root_dir: Optional[str] = None,
-        data_context_config: Optional[Dict[str, Any]] = None
+        data_context_config: Optional[Dict[str, Any]] = None,
     ):
         """
         Initialize database validator.
@@ -57,6 +57,7 @@ class DatabaseValidator:
     def _setup_datasource(self):
         """Set up SQL datasource for Great Expectations."""
         import hashlib
+
         # Create unique datasource name based on connection string
         conn_hash = hashlib.md5(self.connection_string.encode()).hexdigest()[:8]
         datasource_name = f"database_datasource_{conn_hash}"
@@ -69,21 +70,19 @@ class DatabaseValidator:
             try:
                 # Try modern API (GX 1.0+)
                 self.datasource = self.context.data_sources.add_sql(
-                    name=datasource_name,
-                    connection_string=self.connection_string
+                    name=datasource_name, connection_string=self.connection_string
                 )
             except AttributeError:
                 # Fallback to legacy API
                 self.datasource = self.context.sources.add_sql(
-                    name=datasource_name,
-                    connection_string=self.connection_string
+                    name=datasource_name, connection_string=self.connection_string
                 )
 
     def validate_table(
         self,
         table_name: str,
         suite_name: Optional[str] = None,
-        expectations: Optional[List[Union[Callable, Dict[str, Any]]]] = None
+        expectations: Optional[List[Union[Callable, Dict[str, Any]]]] = None,
     ) -> Dict[str, Any]:
         """
         Validate a database table using Great Expectations.
@@ -103,12 +102,13 @@ class DatabaseValidator:
         # Create batch definition
         try:
             asset = self.datasource.add_table_asset(
-                name=f"{table_name}_asset_{self._asset_counter}",
-                table_name=table_name
+                name=f"{table_name}_asset_{self._asset_counter}", table_name=table_name
             )
         except Exception:
             # Asset might already exist
-            asset = self.datasource.get_asset(f"{table_name}_asset_{self._asset_counter}")
+            asset = self.datasource.get_asset(
+                f"{table_name}_asset_{self._asset_counter}"
+            )
 
         batch_request = asset.build_batch_request()
 
@@ -120,8 +120,7 @@ class DatabaseValidator:
 
         # Get validator (batch)
         batch = self.context.get_validator(
-            batch_request=batch_request,
-            expectation_suite_name=suite_name
+            batch_request=batch_request, expectation_suite_name=suite_name
         )
 
         # Run expectations
@@ -148,7 +147,7 @@ class DatabaseValidator:
         query: str,
         expectations: Optional[List[Union[Callable, Dict[str, Any]]]] = None,
         asset_name: Optional[str] = None,
-        suite_name: Optional[str] = None
+        suite_name: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Validate results of a SQL query.
@@ -185,8 +184,7 @@ class DatabaseValidator:
 
         # Get validator (batch)
         batch = self.context.get_validator(
-            batch_request=batch_request,
-            expectation_suite_name=suite_name
+            batch_request=batch_request, expectation_suite_name=suite_name
         )
 
         # Run expectations
@@ -212,12 +210,18 @@ class DatabaseValidator:
         return {
             "success": results.success,
             "statistics": {
-                "evaluated_expectations": results.statistics.get("evaluated_expectations", 0),
-                "successful_expectations": results.statistics.get("successful_expectations", 0),
-                "unsuccessful_expectations": results.statistics.get("unsuccessful_expectations", 0),
+                "evaluated_expectations": results.statistics.get(
+                    "evaluated_expectations", 0
+                ),
+                "successful_expectations": results.statistics.get(
+                    "successful_expectations", 0
+                ),
+                "unsuccessful_expectations": results.statistics.get(
+                    "unsuccessful_expectations", 0
+                ),
                 "success_percent": results.statistics.get("success_percent", 0),
             },
-            "results": results.results if hasattr(results, "results") else []
+            "results": results.results if hasattr(results, "results") else [],
         }
 
     def get_table_info(self, table_name: str) -> Dict[str, Any]:

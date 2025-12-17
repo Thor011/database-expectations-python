@@ -23,14 +23,16 @@ def test_db():
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
-    cursor.execute("""
+    cursor.execute(
+        """
         CREATE TABLE test_users (
             id INTEGER PRIMARY KEY,
             name TEXT NOT NULL,
             email TEXT UNIQUE,
             age INTEGER
         )
-    """)
+    """
+    )
 
     cursor.executemany(
         "INSERT INTO test_users (id, name, email, age) VALUES (?, ?, ?, ?)",
@@ -38,7 +40,7 @@ def test_db():
             (1, "Alice", "alice@test.com", 25),
             (2, "Bob", "bob@test.com", 30),
             (3, "Charlie", "charlie@test.com", 35),
-        ]
+        ],
     )
 
     conn.commit()
@@ -48,6 +50,7 @@ def test_db():
 
     # Cleanup
     import time
+
     for attempt in range(5):
         try:
             if os.path.exists(db_path):
@@ -61,6 +64,7 @@ def test_db():
     if os.path.exists("gx"):
         try:
             import shutil
+
             shutil.rmtree("gx")
         except Exception:
             pass
@@ -73,9 +77,9 @@ def validator(test_db):
     v = DatabaseValidator(connection_string)
     yield v
     # Close validator and dispose engine
-    if hasattr(v, 'engine') and v.engine:
+    if hasattr(v, "engine") and v.engine:
         v.engine.dispose()
-    if hasattr(v, 'close'):
+    if hasattr(v, "close"):
         v.close()
 
 
@@ -119,13 +123,11 @@ class TestDatabaseValidator:
         expectations = ExpectationSuites.combine(
             ExpectationSuites.null_checks(["id", "name"]),
             ExpectationSuites.unique_checks(["email"]),
-            ExpectationSuites.row_count_check(min_rows=1, max_rows=10)
+            ExpectationSuites.row_count_check(min_rows=1, max_rows=10),
         )
 
         results = validator.validate_table(
-            table_name="test_users",
-            suite_name="test_suite",
-            expectations=expectations
+            table_name="test_users", suite_name="test_suite", expectations=expectations
         )
 
         assert results["success"] is True
@@ -135,7 +137,7 @@ class TestDatabaseValidator:
         expectations = [
             {
                 "expectation_type": "expect_column_values_to_be_between",
-                "kwargs": {"column": "age", "min_value": 20, "max_value": 40}
+                "kwargs": {"column": "age", "min_value": 20, "max_value": 40},
             }
         ]
 
@@ -143,7 +145,7 @@ class TestDatabaseValidator:
             query="SELECT * FROM test_users WHERE age > 20",
             asset_name="filtered_users",
             suite_name="query_suite",
-            expectations=expectations
+            expectations=expectations,
         )
 
         assert results["success"] is True
@@ -168,21 +170,26 @@ class TestExpectationSuites:
         expectations = ExpectationSuites.null_checks(["col1", "col2"])
 
         assert len(expectations) == 2
-        assert all(e["expectation_type"] == "expect_column_values_to_not_be_null" for e in expectations)
+        assert all(
+            e["expectation_type"] == "expect_column_values_to_not_be_null"
+            for e in expectations
+        )
 
     def test_type_checks(self):
         """Test type check expectations."""
         expectations = ExpectationSuites.type_checks({"age": "int", "name": "str"})
 
         assert len(expectations) == 2
-        assert all(e["expectation_type"] == "expect_column_values_to_be_of_type" for e in expectations)
+        assert all(
+            e["expectation_type"] == "expect_column_values_to_be_of_type"
+            for e in expectations
+        )
 
     def test_range_checks(self):
         """Test range check expectations."""
-        expectations = ExpectationSuites.range_checks({
-            "age": {"min": 0, "max": 120},
-            "price": {"min": 0.01}
-        })
+        expectations = ExpectationSuites.range_checks(
+            {"age": {"min": 0, "max": 120}, "price": {"min": 0.01}}
+        )
 
         assert len(expectations) == 2
 
@@ -191,32 +198,42 @@ class TestExpectationSuites:
         expectations = ExpectationSuites.unique_checks(["email", "username"])
 
         assert len(expectations) == 2
-        assert all(e["expectation_type"] == "expect_column_values_to_be_unique" for e in expectations)
+        assert all(
+            e["expectation_type"] == "expect_column_values_to_be_unique"
+            for e in expectations
+        )
 
     def test_format_checks(self):
         """Test format check expectations."""
-        expectations = ExpectationSuites.format_checks({
-            "email": r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
-        })
+        expectations = ExpectationSuites.format_checks(
+            {"email": r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"}
+        )
 
         assert len(expectations) == 1
-        assert expectations[0]["expectation_type"] == "expect_column_values_to_match_regex"
+        assert (
+            expectations[0]["expectation_type"] == "expect_column_values_to_match_regex"
+        )
 
     def test_set_membership_checks(self):
         """Test set membership expectations."""
-        expectations = ExpectationSuites.set_membership_checks({
-            "status": ["active", "inactive", "pending"]
-        })
+        expectations = ExpectationSuites.set_membership_checks(
+            {"status": ["active", "inactive", "pending"]}
+        )
 
         assert len(expectations) == 1
-        assert expectations[0]["expectation_type"] == "expect_column_values_to_be_in_set"
+        assert (
+            expectations[0]["expectation_type"] == "expect_column_values_to_be_in_set"
+        )
 
     def test_row_count_check(self):
         """Test row count expectations."""
         expectations = ExpectationSuites.row_count_check(min_rows=10, max_rows=100)
 
         assert len(expectations) == 1
-        assert expectations[0]["expectation_type"] == "expect_table_row_count_to_be_between"
+        assert (
+            expectations[0]["expectation_type"]
+            == "expect_table_row_count_to_be_between"
+        )
 
     def test_combine_suites(self):
         """Test combining multiple suites."""

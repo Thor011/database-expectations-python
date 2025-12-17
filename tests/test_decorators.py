@@ -140,7 +140,7 @@ class TestValidateBothDecorator:
             mock_validator,
             table_name="users",
             expectations_before=[{"type": "null_check"}],
-            expectations_after=[{"type": "unique_check"}]
+            expectations_after=[{"type": "unique_check"}],
         )
         def update_users():
             return "Updated"
@@ -157,13 +157,12 @@ class TestValidateBothDecorator:
         validation_fail = {"success": False}
         validation_success = {"success": True}
 
-        mock_validator.validate_table.side_effect = [validation_fail, validation_success]
+        mock_validator.validate_table.side_effect = [
+            validation_fail,
+            validation_success,
+        ]
 
-        @validate_both(
-            mock_validator,
-            table_name="users",
-            raise_on_failure=True
-        )
+        @validate_both(mock_validator, table_name="users", raise_on_failure=True)
         def update_users():
             return "Updated"
 
