@@ -1,9 +1,8 @@
-﻿"""
+"""
 DatabaseValidator - Core validation engine for database testing
 """
 
 from typing import Optional, Dict, Any, List, Callable, Union
-import sqlalchemy as sa
 from sqlalchemy import create_engine, inspect
 import great_expectations as gx
 import pandas as pd
@@ -65,7 +64,7 @@ class DatabaseValidator:
         try:
             # Try to get existing datasource
             self.datasource = self.context.get_datasource(datasource_name)
-        except:
+        except Exception:
             # Create new SQL datasource using add_sql method
             try:
                 # Try modern API (GX 1.0+)
@@ -103,18 +102,21 @@ class DatabaseValidator:
 
         # Create batch definition
         try:
-            asset = self.datasource.add_table_asset(name=f"{table_name}_asset_{self._asset_counter}", table_name=table_name)
-        except:
+            asset = self.datasource.add_table_asset(
+                name=f"{table_name}_asset_{self._asset_counter}",
+                table_name=table_name
+            )
+        except Exception:
             # Asset might already exist
             asset = self.datasource.get_asset(f"{table_name}_asset_{self._asset_counter}")
-            
+
         batch_request = asset.build_batch_request()
-        
+
         # Create or get expectation suite
         try:
-            suite = self.context.suites.get(suite_name)
-        except:
-            suite = self.context.suites.add(gx.core.ExpectationSuite(name=suite_name))
+            self.context.suites.get(suite_name)
+        except Exception:
+            self.context.suites.add(gx.core.ExpectationSuite(name=suite_name))
 
         # Get validator (batch)
         batch = self.context.get_validator(
@@ -169,17 +171,17 @@ class DatabaseValidator:
         # Create query asset
         try:
             asset = self.datasource.add_query_asset(name=asset_name, query=query)
-        except:
+        except Exception:
             # Asset might already exist
             asset = self.datasource.get_asset(asset_name)
-            
+
         batch_request = asset.build_batch_request()
 
         # Create or get expectation suite
         try:
-            suite = self.context.suites.get(suite_name)
-        except:
-            suite = self.context.suites.add(gx.core.ExpectationSuite(name=suite_name))
+            self.context.suites.get(suite_name)
+        except Exception:
+            self.context.suites.add(gx.core.ExpectationSuite(name=suite_name))
 
         # Get validator (batch)
         batch = self.context.get_validator(

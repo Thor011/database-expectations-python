@@ -1,8 +1,8 @@
-﻿"""
+"""
 Pre-built expectation suites for common database validation scenarios
 """
 
-from typing import List, Dict, Any, Callable
+from typing import List, Dict, Any
 
 
 class ExpectationSuites:
@@ -108,7 +108,7 @@ class ExpectationSuites:
             kwargs["max_value"] = max_rows
         else:
             kwargs["max_value"] = None
-            
+
         return [{
             "expectation_type": "expect_table_row_count_to_be_between",
             "kwargs": kwargs
